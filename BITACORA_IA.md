@@ -45,6 +45,24 @@ Dejé anotado en el código cómo reactivar `?sfw-strict=true` si cambias de opi
 **Prompt de corrección que usé:** [COMPLETAR o "No aplica"]
 **Resultado tras la corrección:** [COMPLETAR o "No aplica"]
 
+## Prompt 6
+**Prompt (copiado tal cual):** ejecuta el paso 4 con comentarios en español
+**Qué hizo la IA (resumen):** Agregué la ruleta con género en dos peticiones (página 1 para leer `last_visible_page`, página al azar de las primeras 10 y anime al azar de esa página) y el buscador (`/anime?q=…&sfw=true&limit=12`) que pinta un grid de tarjetas `<button>` clicables que llevan su anime a la tarjeta grande.
+Unifiqué el estado de carga en `empezarCarga`/`terminarCarga` (ruleta girando y botones bloqueados), agregué búsqueda con "Enter" y mensajes de vacío; todo comentado en español y verificado con `node --check` y peticiones reales.
+**¿Funcionó?:** [COMPLETAR: sí / no]
+**Si no funcionó, qué corregí:** [COMPLETAR o "No aplica"]
+**Prompt de corrección que usé:** [COMPLETAR o "No aplica"]
+**Resultado tras la corrección:** [COMPLETAR o "No aplica"]
+
+## Prompt 7
+**Prompt (copiado tal cual):** haz que funcionen los generos para adultos
+**Qué hizo la IA (resumen):** Quité `sfw=true` de la ruleta con género (`girarConGenero`); verificado con peticiones reales: Hentai (12) y Erotica (49) pasaron de 0 resultados con filtro a 25 (67 y 4 páginas), y Ecchi (9) amplió de 16 a 34 páginas.
+El buscador conserva el `sfw=true` literal del enunciado; si también lo quieres sin filtro, se quita con ese mismo cambio en la línea de `buscarAnime`.
+**¿Funcionó?:** [COMPLETAR: sí / no]
+**Si no funcionó, qué corregí:** [COMPLETAR o "No aplica"]
+**Prompt de corrección que usé:** [COMPLETAR o "No aplica"]
+**Resultado tras la corrección:** [COMPLETAR o "No aplica"]
+
 (Cada paso nuevo agrega otra entrada "## Prompt N" con el mismo formato.)
 
 ## Un error de la IA que detecté

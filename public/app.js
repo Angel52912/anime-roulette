@@ -1,6 +1,6 @@
 // ============================================================
 // ANIME ROULETTE — lógica del front-end
-// Paso 3: conexión con la API de anime (géneros, ruleta y tarjeta)
+// Paso 4: buscador y ruleta con filtro de género
 // ============================================================
 
 // URL base de la API: es gratuita y no necesita clave.
@@ -12,6 +12,8 @@ const BASE_API = "https://api.tenrai.org/v1";
 // ---------- Referencias a los elementos del HTML (mismos IDs) ----------
 const elementoGenero = document.getElementById("genero");
 const botonGirar = document.getElementById("btn-girar");
+const elementoBusqueda = document.getElementById("busqueda");
+const botonBuscar = document.getElementById("btn-buscar");
 const elementoRuleta = document.getElementById("ruleta");
 const textoCargando = document.getElementById("texto-cargando");
 const mensajes = document.getElementById("mensajes");
@@ -26,10 +28,15 @@ const elementoEpisodios = document.getElementById("episodios");
 const elementoAnio = document.getElementById("anio");
 const elementoGeneros = document.getElementById("generos");
 const elementoSinopsis = document.getElementById("sinopsis");
+const gridResultados = document.getElementById("grid-resultados");
+const vacioResultados = document.getElementById("vacio-resultados");
 
 // Anime que se muestra en la tarjeta ahora mismo.
 // Lo usarán los pasos siguientes: "Resumir con IA" (7) y "Mi mano" (8).
 let animeActual = null;
+
+// true mientras hay una petición en curso: evita giros y búsquedas dobles
+let cargando = false;
 
 // ------------------------------------------------------------
 // pedirJikan: hace un fetch a la API con tiempo límite de 8 segundos
@@ -94,6 +101,34 @@ function mostrarError(tipo) {
 }
 
 // ------------------------------------------------------------
+// limpiarMensajes: borra el aviso anterior antes de una acción nueva
+// ------------------------------------------------------------
+function limpiarMensajes() {
+  mensajes.textContent = "";
+  mensajes.classList.remove("error");
+}
+
+// ------------------------------------------------------------
+// empezarCarga / terminarCarga: estado compartido mientras hay petición.
+// La ruleta gira y los botones quedan bloqueados para no repetir peticiones.
+// ------------------------------------------------------------
+function empezarCarga() {
+  cargando = true;
+  botonGirar.disabled = true;
+  botonBuscar.disabled = true;
+  elementoRuleta.classList.add("girando");
+  textoCargando.hidden = false;
+}
+
+function terminarCarga() {
+  cargando = false;
+  botonGirar.disabled = false;
+  botonBuscar.disabled = false;
+  elementoRuleta.classList.remove("girando");
+  textoCargando.hidden = true;
+}
+
+// ------------------------------------------------------------
 // cargarGeneros: pide los géneros a la API y llena el <select> al iniciar
 // ------------------------------------------------------------
 async function cargarGeneros() {
@@ -102,8 +137,8 @@ async function cargarGeneros() {
 
     for (const genero of json.data) {
       const opcion = document.createElement("option");
-      opcion.value = genero.mal_id;      // lo pide el filtro del paso 4
-      opcion.textContent = genero.name;  // nombre visible en español/inglés según Jikan
+      opcion.value = genero.mal_id;      // lo usa la ruleta con filtro
+      opcion.textContent = genero.name;  // nombre visible tal cual lo da la API
       elementoGenero.appendChild(opcion);
     }
   } catch (error) {
@@ -176,41 +211,167 @@ function pintarTarjeta(anime) {
 }
 
 // ------------------------------------------------------------
-// girarRuleta: pide un anime al azar y lo muestra en la tarjeta.
-// (El filtro por género y el buscador se agregan en el paso 4.)
+// girarConGenero: la ruleta con género se decide en DOS peticiones.
+// 1) Pedimos la página 1 solo para leer pagination.last_visible_page
+//    (cuántas páginas de resultados tiene ese género).
+// 2) Elegimos una página al azar entre 1 y min(last_visible_page, 10)
+//    y dentro de esa página un anime al azar.
+// Así el giro no se queda siempre en los mismos 25 primeros.
+// Devuelve el anime elegido o null si no hay resultados.
+// ------------------------------------------------------------
+async function girarConGenero(idGenero) {
+  // Sin sfw: aquí manda el género elegido. Con "sfw=true" los géneros para
+  // adultos (Hentai, Erotica) devolvían 0 resultados y el giro terminaba
+  // siempre en "Nadie apostó por eso"; se decidió que funcionen todos.
+  const rutaBase = `/anime?genres=${idGenero}&order_by=score&sort=desc&limit=25`;
+
+  // 1) cuántas páginas hay
+  const primera = await pedirJikan(`${rutaBase}&page=1`);
+  const ultima = Math.min((primera.pagination && primera.pagination.last_visible_page) || 1, 10);
+
+  // 2) página al azar (entre 1 y "ultima", ambas incluidas)
+  const pagina = Math.floor(Math.random() * ultima) + 1;
+  const segunda = await pedirJikan(`${rutaBase}&page=${pagina}`);
+
+  if (!segunda.data || segunda.data.length === 0) {
+    return null; // respuesta vacía
+  }
+
+  // 3) anime al azar dentro de esa página
+  const posicion = Math.floor(Math.random() * segunda.data.length);
+  return segunda.data[posicion];
+}
+
+// ------------------------------------------------------------
+// girarRuleta: con género elegido usa girarConGenero; sin género,
+// pide un anime al azar puro (/random/anime, sin filtro, tal cual el enunciado)
 // ------------------------------------------------------------
 async function girarRuleta() {
-  // Limpiamos mensajes y ponemos la ruleta en modo "cargando"
-  mensajes.textContent = "";
-  mensajes.classList.remove("error");
-  botonGirar.disabled = true; // evita giros dobles mientras carga
-  elementoRuleta.classList.add("girando");
-  textoCargando.hidden = false;
+  if (cargando) return; // ya hay una petición en curso
+
+  limpiarMensajes();
+  empezarCarga();
 
   try {
-    // Sin filtro de contenido: se usa GET /random/anime tal cual lo pide el
-    // enunciado, y se decidió conservar el azar completo (contenido para
-    // adultos incluido) porque da más realismo a la ruleta.
-    // Si alguna vez quieres filtrarlo, basta con añadir "?sfw-strict=true".
-    const json = await pedirJikan("/random/anime");
+    const idGenero = elementoGenero.value;
+    let anime = null;
+
+    if (idGenero) {
+      anime = await girarConGenero(idGenero);
+    } else {
+      const json = await pedirJikan("/random/anime");
+      anime = json.data || null;
+    }
 
     // Respuesta vacía: no hay anime que mostrar
-    if (!json.data) {
+    if (!anime) {
       mostrarError("vacio");
       return;
     }
 
-    pintarTarjeta(json.data);
+    pintarTarjeta(anime);
   } catch (error) {
     mostrarError(error.message);
   } finally {
-    // Sea éxito o error, la ruleta siempre se detiene
-    elementoRuleta.classList.remove("girando");
-    textoCargando.hidden = true;
-    botonGirar.disabled = false;
+    terminarCarga(); // sea éxito o error, la ruleta siempre se detiene
+  }
+}
+
+// ------------------------------------------------------------
+// buscarAnime: pide hasta 12 resultados y los pinta como tarjetas chicas
+// ------------------------------------------------------------
+async function buscarAnime() {
+  if (cargando) return; // ya hay una petición en curso
+
+  const texto = elementoBusqueda.value.trim();
+
+  // Sin texto no tiene sentido pedir a la API
+  if (!texto) {
+    mostrarError("vacio");
+    return;
+  }
+
+  limpiarMensajes();
+  empezarCarga();
+
+  try {
+    // encodeURIComponent convierte espacios y tildes a formato de URL
+    const json = await pedirJikan(`/anime?q=${encodeURIComponent(texto)}&sfw=true&limit=12`);
+    const resultados = json.data || [];
+
+    pintarResultados(resultados);
+
+    // Búsqueda sin resultados → mensaje temático de vacío
+    if (resultados.length === 0) {
+      mostrarError("vacio");
+    }
+  } catch (error) {
+    mostrarError(error.message);
+  } finally {
+    terminarCarga();
+  }
+}
+
+// ------------------------------------------------------------
+// pintarResultados: dibuja el grid de tarjetas pequeñas.
+// Al hacer clic en una, esa pasa a la tarjeta grande.
+// ------------------------------------------------------------
+function pintarResultados(lista) {
+  gridResultados.textContent = ""; // borramos los resultados anteriores
+
+  // Si no hay nada, volvemos a mostrar el texto de "sin resultados"
+  vacioResultados.hidden = lista.length > 0;
+
+  for (const anime of lista) {
+    const titulo = anime.title_english || anime.title || "Sin título";
+    const portada = anime.images && anime.images.jpg ? anime.images.jpg.large_image_url : null;
+
+    // La tarjeta chica es un <button> para que también se pueda usar
+    // con el teclado (accesibilidad)
+    const boton = document.createElement("button");
+    boton.type = "button";
+    boton.className = "mini-tarjeta";
+
+    const imagen = document.createElement("img");
+    if (portada) {
+      imagen.src = portada;
+      imagen.alt = `Portada de ${titulo}`; // alt obligatorio
+    } else {
+      imagen.alt = "Portada no disponible";
+    }
+
+    const datos = document.createElement("div");
+    datos.className = "mini-datos";
+
+    const nombre = document.createElement("span");
+    nombre.className = "mini-titulo";
+    nombre.textContent = titulo;
+
+    const puntuacion = document.createElement("span");
+    puntuacion.className = "mini-score";
+    puntuacion.textContent = typeof anime.score === "number" ? `Score: ${anime.score}` : "Sin score";
+
+    datos.appendChild(nombre);
+    datos.appendChild(puntuacion);
+    boton.appendChild(imagen);
+    boton.appendChild(datos);
+
+    // Clic en la tarjeta chica → se muestra en la tarjeta grande
+    boton.addEventListener("click", () => pintarTarjeta(anime));
+
+    gridResultados.appendChild(boton);
   }
 }
 
 // ---------- Arranque de la página ----------
 botonGirar.addEventListener("click", girarRuleta); // botón "Girar la ruleta"
+botonBuscar.addEventListener("click", buscarAnime); // botón "Buscar"
+
+// Con "Enter" dentro del campo de búsqueda también se busca
+elementoBusqueda.addEventListener("keydown", (evento) => {
+  if (evento.key === "Enter") {
+    buscarAnime();
+  }
+});
+
 cargarGeneros(); // el <select> se llena apenas carga la página

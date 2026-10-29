@@ -1,6 +1,6 @@
 // ============================================================
 // ANIME ROULETTE — lógica del front-end
-// Paso 7: botón "Resumir con IA" conectado al backend, con caché
+// Paso 8: Mi mano (watchlist) guardada en localStorage
 // ============================================================
 
 // URL base de la API: es gratuita y no necesita clave.
@@ -33,6 +33,12 @@ const vacioResultados = document.getElementById("vacio-resultados");
 const botonResumir = document.getElementById("btn-resumir");
 const cajaResumen = document.getElementById("caja-resumen");
 const textoResumen = document.getElementById("resumen-texto");
+const botonGuardar = document.getElementById("btn-guardar");
+const listaMano = document.getElementById("lista-mano");
+const manoVacia = document.getElementById("mano-vacia");
+
+// Clave con la que se guarda "Mi mano" en el localStorage del navegador
+const CLAVE_MANO = "animeRoulette.miMano";
 
 // Anime que se muestra en la tarjeta ahora mismo.
 // Lo usarán los pasos siguientes: "Resumir con IA" (7) y "Mi mano" (8).
@@ -269,6 +275,7 @@ function pintarTarjeta(anime) {
   // Si ese anime ya fue resumido antes, mostramos su resumen guardado;
   // si no, ocultamos el cuadro para no enseñar el resumen de otro anime.
   botonResumir.disabled = false;
+  botonGuardar.disabled = false; // y también el de "Guardar en Mi mano"
   if (cache[anime.mal_id]) {
     mostrarResumen(cache[anime.mal_id]);
   } else {
@@ -509,10 +516,128 @@ function pintarResultados(lista) {
   }
 }
 
+// ------------------------------------------------------------
+// MI MANO (watchlist en localStorage)
+// Se guarda un arreglo JSON de { mal_id, title, image, score }.
+// localStorage puede estar bloqueado (modo privado, permisos), por eso
+// todas las lecturas y escrituras van dentro de try/catch.
+// ------------------------------------------------------------
+
+// leerMiMano: devuelve el arreglo guardado, o [] si no hay nada o falla
+function leerMiMano() {
+  try {
+    const guardado = localStorage.getItem(CLAVE_MANO);
+    const lista = guardado ? JSON.parse(guardado) : [];
+    // Si alguien editó el valor a mano y no es un arreglo, lo ignoramos
+    return Array.isArray(lista) ? lista : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+// guardarMiMano: escribe el arreglo; devuelve false si el navegador no deja
+function guardarMiMano(lista) {
+  try {
+    localStorage.setItem(CLAVE_MANO, JSON.stringify(lista));
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+// agregarAMiMano: guarda un anime sin permitir duplicados por mal_id
+function agregarAMiMano(anime) {
+  const lista = leerMiMano();
+
+  if (lista.some((item) => item.mal_id === anime.mal_id)) {
+    return "repetido";
+  }
+
+  lista.push({
+    mal_id: anime.mal_id,
+    title: anime.title_english || anime.title || "Sin título",
+    image: anime.images && anime.images.jpg ? anime.images.jpg.large_image_url : null,
+    score: typeof anime.score === "number" ? anime.score : null
+  });
+
+  return guardarMiMano(lista) ? "guardado" : "bloqueado";
+}
+
+// quitarDeMiMano: borra el anime con ese mal_id y vuelve a pintar la lista
+function quitarDeMiMano(id) {
+  guardarMiMano(leerMiMano().filter((item) => item.mal_id !== id));
+  pintarMiMano();
+}
+
+// pintarMiMano: dibuja la lista leyendo siempre lo guardado
+function pintarMiMano() {
+  const lista = leerMiMano();
+
+  listaMano.textContent = ""; // se borra y se redibuja completa
+  manoVacia.hidden = lista.length > 0;
+
+  for (const anime of lista) {
+    const item = document.createElement("li");
+    item.className = "mano-item";
+
+    const imagen = document.createElement("img");
+    if (anime.image) {
+      imagen.src = anime.image;
+    }
+    imagen.alt = `Portada de ${anime.title}`;
+
+    const info = document.createElement("div");
+    info.className = "mano-info";
+
+    const titulo = document.createElement("span");
+    titulo.className = "mano-titulo";
+    titulo.textContent = anime.title;
+
+    const puntuacion = document.createElement("span");
+    puntuacion.className = "mano-score";
+    puntuacion.textContent = typeof anime.score === "number" ? `Score: ${anime.score}` : "Sin score";
+
+    const quitar = document.createElement("button");
+    quitar.type = "button";
+    quitar.className = "mano-quitar";
+    quitar.textContent = "Quitar";
+    quitar.setAttribute("aria-label", `Quitar ${anime.title} de Mi mano`);
+    quitar.addEventListener("click", () => quitarDeMiMano(anime.mal_id));
+
+    info.appendChild(titulo);
+    info.appendChild(puntuacion);
+    item.appendChild(imagen);
+    item.appendChild(info);
+    item.appendChild(quitar);
+    listaMano.appendChild(item);
+  }
+}
+
+// ------------------------------------------------------------
+// guardarAnimeActual: botón "Guardar en Mi mano" de la tarjeta grande
+// ------------------------------------------------------------
+function guardarAnimeActual() {
+  if (!animeActual) return;
+
+  limpiarMensajes();
+  const resultado = agregarAMiMano(animeActual);
+
+  if (resultado === "guardado") {
+    pintarMiMano();
+    mensajes.textContent = "Carta guardada en Mi mano.";
+  } else if (resultado === "repetido") {
+    mensajes.textContent = "Esa carta ya está en Mi mano.";
+  } else {
+    mensajes.textContent = "No se pudo guardar: el navegador bloquea el almacenamiento.";
+    mensajes.classList.add("error");
+  }
+}
+
 // ---------- Arranque de la página ----------
 botonGirar.addEventListener("click", girarRuleta); // botón "Girar la ruleta"
 botonBuscar.addEventListener("click", buscarAnime); // botón "Buscar"
 botonResumir.addEventListener("click", resumirConIA); // botón "Resumir con IA"
+botonGuardar.addEventListener("click", guardarAnimeActual); // botón "Guardar en Mi mano"
 
 // Con "Enter" dentro del campo de búsqueda también se busca
 elementoBusqueda.addEventListener("keydown", (evento) => {
@@ -522,3 +647,4 @@ elementoBusqueda.addEventListener("keydown", (evento) => {
 });
 
 cargarGeneros(); // el <select> se llena apenas carga la página
+pintarMiMano();  // y Mi mano se pinta con lo que ya había guardado

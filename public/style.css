@@ -1,0 +1,637 @@
+/* ============================================================
+   ANIME ROULETTE — Estilo visual (paso 2, sin lógica)
+   Fusión de tres referencias de anime, solo CSS propio:
+   - Kakegurui ............ casino elegante y peligroso (rojo + oro)
+   - No Game No Life ...... colores vivos y tablero de ajedrez (rosa + cian)
+   - Classroom of the Elite  minimalismo frío y rangos por clase (hielo)
+   ============================================================ */
+
+/* ---------- 1. Variables de la paleta (sección 4) ---------- */
+:root {
+  --bg: #0a0a10;          /* negro casino */
+  --panel: #14141f;
+  --rojo: #c1123a;        /* Kakegurui: rojo carmesí */
+  --oro: #e8c15a;         /* detalles de lujo */
+  --rosa: #ff5fa2;        /* No Game No Life */
+  --cian: #4fd8ff;        /* No Game No Life */
+  --hielo: #cfd8e6;       /* Classroom of the Elite: texto frío */
+  --texto: #eef1f7;
+  --borde-oro: rgba(232, 193, 90, 0.45); /* borde fino dorado */
+}
+
+/* ---------- 2. Base ---------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box; /* el ancho incluye bordes y relleno */
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--texto);
+  font-family: 'Inter', 'Noto Sans JP', system-ui, sans-serif;
+  line-height: 1.6;
+
+  /* Fondo oscuro con tablero de ajedrez sutil (NGNL) en baja opacidad:
+     dos capas de degradado a 45° desplazadas crean las casillas */
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(45deg, rgba(255, 255, 255, 0.03) 25%, transparent 25%, transparent 75%, rgba(255, 255, 255, 0.03) 75%),
+    linear-gradient(45deg, rgba(255, 255, 255, 0.03) 25%, transparent 25%, transparent 75%, rgba(255, 255, 255, 0.03) 75%);
+  background-size: 64px 64px;
+  background-position: 0 0, 32px 32px;
+}
+
+img {
+  max-width: 100%;
+}
+
+/* El atributo hidden debe poder ocultar elementos con display propio */
+[hidden] {
+  display: none !important;
+}
+
+/* Accesibilidad: siempre se ve qué elemento tiene el foco */
+:focus-visible {
+  outline: 2px solid var(--cian);
+  outline-offset: 2px;
+}
+
+/* ---------- 3. Header: título con brillo dorado ---------- */
+.encabezado {
+  text-align: center;
+  padding: 3rem 1rem 2rem;
+  /* Degradado radial rojo detrás del título (Kakegurui) */
+  background: radial-gradient(ellipse 70% 90% at 50% 40%, rgba(193, 18, 58, 0.35), transparent 70%);
+}
+
+.titulo-principal {
+  margin: 0;
+  font-family: 'Cinzel', serif;
+  font-size: clamp(2.2rem, 6vw, 4rem);
+  letter-spacing: 0.12em;
+  color: var(--oro);
+  /* Brillo dorado: dos sombras de texto, una corta y otra difusa */
+  text-shadow: 0 0 18px rgba(232, 193, 90, 0.5), 0 0 40px rgba(232, 193, 90, 0.25);
+}
+
+.subtitulo {
+  margin: 0.5rem 0 0;
+  color: var(--hielo);
+  font-size: 1.05rem;
+  letter-spacing: 0.08em;
+}
+
+/* ---------- 4. Contenedor principal ---------- */
+.contenedor {
+  width: min(1100px, 92vw);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding-bottom: 3rem;
+  /* Perspectiva para que la tarjeta se vea al volcarse en 3D */
+  perspective: 1200px;
+}
+
+/* ---------- 5. Panel de apuesta ---------- */
+.panel-apuesta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: var(--panel);
+  border: 1px solid var(--borde-oro);
+  border-radius: 12px;
+  /* Sombra con brillo rojo/rosa */
+  box-shadow: 0 0 22px rgba(193, 18, 58, 0.25), 0 0 12px rgba(255, 95, 162, 0.12);
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex: 1 1 200px;
+}
+
+.campo-busqueda {
+  flex: 2 1 320px;
+}
+
+/* Etiquetas pequeñas con tipografía de juegos (Press Start 2P) */
+.etiqueta {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.05em;
+  color: var(--cian);
+  text-transform: uppercase;
+}
+
+/* Controles (select e input) */
+.control {
+  width: 100%;
+  font-family: inherit;
+  font-size: 1rem;
+  color: var(--texto);
+  background: #0d0d16;
+  border: 1px solid var(--borde-oro);
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+}
+
+.fila-busqueda {
+  display: flex;
+  gap: 0.6rem;
+}
+
+/* ---------- 6. Botones ---------- */
+.boton {
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--texto);
+  background: transparent;
+  border: 1px solid var(--oro);
+  border-radius: 8px;
+  padding: 0.65rem 1.2rem;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.boton:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 0 14px rgba(232, 193, 90, 0.45);
+}
+
+.boton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Botón principal: "Girar la ruleta" con degradado carmesí */
+.boton-principal {
+  background: linear-gradient(180deg, var(--rojo), #8f0d2c);
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.boton-principal:hover:not(:disabled) {
+  box-shadow: 0 0 18px rgba(193, 18, 58, 0.6);
+}
+
+/* Botón de la IA: borde cian para distinguirlo */
+.boton-ia {
+  border-color: var(--cian);
+}
+
+.boton-ia:hover:not(:disabled) {
+  box-shadow: 0 0 14px rgba(79, 216, 255, 0.5);
+}
+
+/* ---------- 7. Zona de mensajes ---------- */
+.mensajes {
+  min-height: 1.6rem; /* evita que el layout salte cuando llega un mensaje */
+  text-align: center;
+  font-size: 1rem;
+}
+
+.mensajes.error {
+  color: var(--rosa);
+}
+
+.mensajes.exito {
+  color: var(--cian);
+}
+
+/* ---------- 8. Ruleta CSS (conic-gradient rojo/negro) ---------- */
+.zona-ruleta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Marco exterior: deja espacio para el puntero dorado de arriba */
+.ruleta-marco {
+  position: relative;
+  padding-top: 20px;
+}
+
+.ruleta-marco::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 12px solid transparent;
+  border-right: 12px solid transparent;
+  border-top: 20px solid var(--oro);
+  filter: drop-shadow(0 0 6px rgba(232, 193, 90, 0.7));
+}
+
+.ruleta {
+  width: 170px;
+  height: 170px;
+  border-radius: 50%;
+  /* Segmentos rojo/negro alternados (casino estilo Kakegurui) */
+  background: conic-gradient(
+    var(--rojo) 0deg 45deg,
+    #12121c 45deg 90deg,
+    var(--rojo) 90deg 135deg,
+    #12121c 135deg 180deg,
+    var(--rojo) 180deg 225deg,
+    #12121c 225deg 270deg,
+    var(--rojo) 270deg 315deg,
+    #12121c 315deg 360deg
+  );
+  border: 6px solid var(--oro);
+  box-shadow: 0 0 24px rgba(232, 193, 90, 0.35), inset 0 0 18px rgba(0, 0, 0, 0.7);
+  position: relative;
+  /* Gira sola; el paso 3 agrega la clase .girando mientras hay petición */
+  animation: girar 1.6s linear infinite;
+  animation-play-state: paused;
+}
+
+.ruleta.girando {
+  animation-play-state: running;
+}
+
+/* Centro dorado de la ruleta */
+.ruleta::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 22px;
+  height: 22px;
+  transform: translate(-50%, -50%);
+  background: var(--oro);
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(232, 193, 90, 0.8);
+}
+
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.texto-cargando {
+  margin: 0;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.05em;
+  color: var(--cian);
+}
+
+/* ---------- 9. Tarjeta de resultado (se voltea como una carta) ---------- */
+.tarjeta {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 1.25rem;
+  padding: 1.25rem;
+  background: var(--panel);
+  border: 1px solid var(--borde-oro);
+  border-radius: 14px;
+  box-shadow: 0 0 26px rgba(193, 18, 58, 0.28);
+  /* Animación de volteo: se reinicia cada vez que la tarjeta se vuelve a mostrar */
+  animation: voltear 0.7s ease both;
+}
+
+@keyframes voltear {
+  from {
+    opacity: 0;
+    transform: rotateY(90deg);
+  }
+  to {
+    opacity: 1;
+    transform: rotateY(0deg);
+  }
+}
+
+.tarjeta-portada {
+  background: #0d0d16;
+  border: 1px solid var(--borde-oro);
+  border-radius: 10px;
+  overflow: hidden;
+  /* Las portadas de Jikan son verticales (2:3) */
+  aspect-ratio: 2 / 3;
+}
+
+.portada {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tarjeta-datos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  min-width: 0;
+}
+
+.tarjeta-titulo {
+  margin: 0;
+  font-family: 'Cinzel', serif;
+  font-size: clamp(1.3rem, 3vw, 1.9rem);
+  color: var(--oro);
+}
+
+/* Insignia de clase (Classroom of the Elite) */
+.insignia-fila {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+}
+
+.insignia {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.05em;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  color: var(--hielo);
+  background: rgba(207, 216, 230, 0.08);
+}
+
+/* Colores según la clase que asigne JavaScript (sección 4) */
+.clase-a {
+  color: var(--oro);
+  background: rgba(232, 193, 90, 0.12);
+  box-shadow: 0 0 12px rgba(232, 193, 90, 0.35);
+}
+
+.clase-b {
+  color: var(--cian);
+  background: rgba(79, 216, 255, 0.1);
+  box-shadow: 0 0 12px rgba(79, 216, 255, 0.3);
+}
+
+.clase-c {
+  color: var(--rosa);
+  background: rgba(255, 95, 162, 0.1);
+  box-shadow: 0 0 12px rgba(255, 95, 162, 0.3);
+}
+
+.clase-d {
+  color: var(--hielo);
+  background: rgba(207, 216, 230, 0.08);
+  box-shadow: 0 0 12px rgba(207, 216, 230, 0.2);
+}
+
+.puntos {
+  color: var(--hielo);
+  font-size: 0.95rem;
+}
+
+/* Datos: score, episodios, año y géneros */
+.metadatos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.metadatos-ancho {
+  flex-basis: 100%; /* los géneros ocupan su propia línea */
+}
+
+.metadato-etiqueta {
+  display: block;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.5rem;
+  letter-spacing: 0.05em;
+  color: var(--cian);
+  margin-bottom: 0.3rem;
+}
+
+.metadato-valor {
+  color: var(--texto);
+  font-weight: 600;
+}
+
+.sinopsis {
+  margin: 0;
+  color: var(--hielo);
+  font-size: 0.98rem;
+}
+
+.tarjeta-botones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+}
+
+/* Cuadro del resumen de la IA */
+.caja-resumen {
+  border: 1px dashed rgba(79, 216, 255, 0.5);
+  background: rgba(79, 216, 255, 0.06);
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+}
+
+.caja-resumen-etiqueta {
+  margin: 0 0 0.5rem;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.5rem;
+  letter-spacing: 0.05em;
+  color: var(--cian);
+}
+
+.caja-resumen-texto {
+  margin: 0;
+  color: var(--texto);
+}
+
+/* ---------- 10. Secciones: resultados y Mi mano ---------- */
+.seccion-titulo {
+  margin: 0 0 1rem;
+  padding-bottom: 0.5rem;
+  font-family: 'Cinzel', serif;
+  font-size: 1.4rem;
+  color: var(--oro);
+  border-bottom: 1px solid var(--borde-oro);
+}
+
+.seccion-vacia {
+  margin: 0 0 1rem;
+  color: var(--hielo);
+  font-style: italic;
+}
+
+/* Grid de tarjetas pequeñas (resultados de búsqueda) */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 1rem;
+}
+
+.mini-tarjeta {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  text-align: left;
+  font: inherit;
+  color: var(--texto);
+  background: var(--panel);
+  border: 1px solid var(--borde-oro);
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.mini-tarjeta:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 0 16px rgba(255, 95, 162, 0.35);
+}
+
+.mini-tarjeta img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+}
+
+.mini-datos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.6rem;
+}
+
+.mini-titulo {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.mini-score {
+  font-size: 0.8rem;
+  color: var(--oro);
+}
+
+/* Lista de Mi mano (watchlist) */
+.lista-mano {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mano-item {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.6rem 0.8rem;
+  background: var(--panel);
+  border: 1px solid var(--borde-oro);
+  border-radius: 10px;
+}
+
+.mano-item img {
+  width: 46px;
+  height: 66px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid var(--borde-oro);
+}
+
+.mano-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mano-titulo {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.mano-score {
+  font-size: 0.85rem;
+  color: var(--oro);
+}
+
+.mano-quitar {
+  font-family: inherit;
+  font-size: 0.85rem;
+  color: var(--rosa);
+  background: transparent;
+  border: 1px solid var(--rojo);
+  border-radius: 6px;
+  padding: 0.35rem 0.7rem;
+  cursor: pointer;
+}
+
+.mano-quitar:hover {
+  box-shadow: 0 0 12px rgba(193, 18, 58, 0.5);
+}
+
+/* ---------- 11. Footer: regla del juego ---------- */
+.pie {
+  margin-top: auto;
+  padding: 1.4rem 1rem 2rem;
+  text-align: center;
+  color: var(--hielo);
+  font-family: 'Cinzel', serif;
+  letter-spacing: 0.06em;
+  border-top: 1px solid var(--borde-oro);
+}
+
+.pie p {
+  margin: 0;
+}
+
+/* ---------- 12. Responsive (celular y computadora) ---------- */
+@media (max-width: 700px) {
+  .encabezado {
+    padding: 2rem 1rem 1.5rem;
+  }
+
+  .panel-apuesta {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .fila-busqueda {
+    flex-direction: column;
+  }
+
+  /* La tarjeta pasa a una sola columna (portada arriba, datos abajo) */
+  .tarjeta {
+    grid-template-columns: 1fr;
+  }
+
+  .tarjeta-portada {
+    max-width: 260px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .ruleta {
+    width: 140px;
+    height: 140px;
+  }
+}
+
+/* ---------- 13. Accesibilidad: respeta quien pide menos movimiento ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .ruleta,
+  .tarjeta,
+  .boton,
+  .mini-tarjeta {
+    animation: none !important;
+    transition: none !important;
+  }
+}

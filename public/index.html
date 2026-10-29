@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Anime Roulette — Apuesta tu próxima obsesión</title>
+
+  <!-- Tipografías de Google Fonts: Cinzel (títulos), Inter (texto) y
+       Press Start 2P (solo etiquetas pequeñas, guiño a juegos) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+
+  <!-- Nuestro estilo (paso 2: solo interfaz, sin lógica) -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ========== 1. HEADER: título y subtítulo ========== -->
+  <header class="encabezado">
+    <h1 class="titulo-principal">ANIME ROULETTE</h1>
+    <p class="subtitulo">Apuesta tu próxima obsesión.</p>
+  </header>
+
+  <main class="contenedor">
+
+    <!-- ========== 2. PANEL DE APUESTA: género, ruleta y buscador ========== -->
+    <section class="panel-apuesta" aria-label="Panel de apuesta">
+
+      <!-- El <select> se llena desde la API de Jikan en el paso 3 -->
+      <div class="campo">
+        <label class="etiqueta" for="genero">Género</label>
+        <select id="genero" class="control">
+          <option value="">Todos los géneros</option>
+        </select>
+      </div>
+
+      <button id="btn-girar" class="boton boton-principal" type="button">Girar la ruleta</button>
+
+      <!-- Buscador: input + botón "Buscar" -->
+      <div class="campo campo-busqueda">
+        <label class="etiqueta" for="busqueda">Buscar anime</label>
+        <div class="fila-busqueda">
+          <input id="busqueda" class="control" type="search" placeholder="Escribe un título…" autocomplete="off">
+          <button id="btn-buscar" class="boton" type="button">Buscar</button>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ========== 3. ZONA DE MENSAJES (accesibilidad: se anuncia en voz alta) ========== -->
+    <div id="mensajes" class="mensajes" role="status" aria-live="polite"></div>
+
+    <!-- ========== 4. RULETA / CARGANDO: gira mientras hay una petición ========== -->
+    <div class="zona-ruleta">
+      <div class="ruleta-marco">
+        <div id="ruleta" class="ruleta" aria-hidden="true"></div>
+      </div>
+      <p id="texto-cargando" class="texto-cargando" hidden>Girando la ruleta…</p>
+    </div>
+
+    <!-- ========== 5. TARJETA DE RESULTADO ==========
+         En este paso muestra texto de ejemplo; en el paso 3 la rellena
+         JavaScript con el anime que salga de la ruleta. -->
+    <article id="tarjeta" class="tarjeta" aria-label="Resultado de la ruleta">
+
+      <div class="tarjeta-portada">
+        <!-- Sin src todavía: la portada real la pone el paso 3 (alt obligatorio) -->
+        <img id="portada" class="portada" alt="Portada del anime">
+      </div>
+
+      <div class="tarjeta-datos">
+        <h2 id="titulo" class="tarjeta-titulo">Tu anime aparecerá aquí</h2>
+
+        <!-- Insignia de clase (Classroom of the Elite) según el score -->
+        <div class="insignia-fila">
+          <span id="clase" class="insignia">CLASE —</span>
+          <span id="puntos" class="puntos">Puntos de clase: —</span>
+        </div>
+
+        <!-- Score, episodios, año y géneros -->
+        <ul class="metadatos">
+          <li>
+            <span class="metadato-etiqueta">SCORE</span>
+            <span id="score" class="metadato-valor">—</span>
+          </li>
+          <li>
+            <span class="metadato-etiqueta">EPISODIOS</span>
+            <span id="episodios" class="metadato-valor">—</span>
+          </li>
+          <li>
+            <span class="metadato-etiqueta">AÑO</span>
+            <span id="anio" class="metadato-valor">—</span>
+          </li>
+          <li class="metadatos-ancho">
+            <span class="metadato-etiqueta">GÉNEROS</span>
+            <span id="generos" class="metadato-valor">—</span>
+          </li>
+        </ul>
+
+        <!-- Sinopsis -->
+        <p id="sinopsis" class="sinopsis">Sin sinopsis disponible</p>
+
+        <!-- Acciones: se habilitan cuando hay un anime en la tarjeta -->
+        <div class="tarjeta-botones">
+          <button id="btn-resumir" class="boton boton-ia" type="button" disabled>Resumir con IA</button>
+          <button id="btn-guardar" class="boton" type="button" disabled>Guardar en Mi mano</button>
+        </div>
+
+        <!-- Cuadro donde aparece el resumen de la IA (paso 7) -->
+        <div id="caja-resumen" class="caja-resumen" aria-live="polite" hidden>
+          <p class="caja-resumen-etiqueta">Resumen de la casa</p>
+          <p id="resumen-texto" class="caja-resumen-texto"></p>
+        </div>
+
+      </div>
+    </article>
+
+    <!-- ========== 6. RESULTADOS DE BÚSQUEDA: grid de tarjetas pequeñas ========== -->
+    <section id="resultados" class="seccion" aria-label="Resultados de búsqueda">
+      <h2 class="seccion-titulo">Resultados de la búsqueda</h2>
+      <p id="vacio-resultados" class="seccion-vacia">Aún no hay resultados: escribe un título en el buscador.</p>
+      <div id="grid-resultados" class="grid"></div>
+    </section>
+
+    <!-- ========== 7. MI MANO (watchlist) ========== -->
+    <section id="mi-mano" class="seccion" aria-label="Mi mano">
+      <h2 class="seccion-titulo">Mi mano</h2>
+      <p id="mano-vacia" class="seccion-vacia">Tu mano está vacía. Guarda un anime con el botón “Guardar en Mi mano”.</p>
+      <ul id="lista-mano" class="lista-mano"></ul>
+    </section>
+
+  </main>
+
+  <!-- ========== 8. FOOTER: regla del juego ========== -->
+  <footer class="pie">
+    <p>Regla única: todo se decide con un giro.</p>
+  </footer>
+
+  <!-- Lógica del front-end: entra en el paso 3 (por ahora solo hay una nota) -->
+  <script src="app.js" defer></script>
+
+</body>
+</html>

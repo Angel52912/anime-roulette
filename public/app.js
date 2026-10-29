@@ -1,6 +1,6 @@
 // ============================================================
 // ANIME ROULETTE — lógica del front-end
-// Paso 4: buscador y ruleta con filtro de género
+// Paso 7: botón "Resumir con IA" conectado al backend, con caché
 // ============================================================
 
 // URL base de la API: es gratuita y no necesita clave.
@@ -30,6 +30,9 @@ const elementoGeneros = document.getElementById("generos");
 const elementoSinopsis = document.getElementById("sinopsis");
 const gridResultados = document.getElementById("grid-resultados");
 const vacioResultados = document.getElementById("vacio-resultados");
+const botonResumir = document.getElementById("btn-resumir");
+const cajaResumen = document.getElementById("caja-resumen");
+const textoResumen = document.getElementById("resumen-texto");
 
 // Anime que se muestra en la tarjeta ahora mismo.
 // Lo usarán los pasos siguientes: "Resumir con IA" (7) y "Mi mano" (8).
@@ -40,6 +43,11 @@ let cargando = false;
 
 // Cronómetro del cooldown del 429: null cuando no hay espera en curso
 let relojCooldown = null;
+
+// Caché en memoria de los resúmenes ya pedidos: cache[mal_id] = texto.
+// Así, si el usuario vuelve a pulsar "Resumir con IA" en el mismo anime,
+// no se gasta otra petición a Gemini (cuya cuota es limitada).
+const cache = {};
 
 // ------------------------------------------------------------
 // pedirJikan: hace un fetch a la API con tiempo límite de 8 segundos
@@ -257,10 +265,95 @@ function pintarTarjeta(anime) {
     : "Sin géneros";
   elementoSinopsis.textContent = anime.synopsis || "Sin sinopsis disponible";
 
+  // Ya hay anime en la tarjeta: se habilita el botón de IA.
+  // Si ese anime ya fue resumido antes, mostramos su resumen guardado;
+  // si no, ocultamos el cuadro para no enseñar el resumen de otro anime.
+  botonResumir.disabled = false;
+  if (cache[anime.mal_id]) {
+    mostrarResumen(cache[anime.mal_id]);
+  } else {
+    cajaResumen.hidden = true;
+  }
+
   // Reiniciamos la animación para que la tarjeta se "voltee" de nuevo
   tarjeta.style.animation = "none";
   void tarjeta.offsetHeight; // truco: obliga al navegador a repintar
   tarjeta.style.animation = "";
+}
+
+// ------------------------------------------------------------
+// mostrarResumen: escribe el resumen de la IA en su cuadro y lo muestra
+// ------------------------------------------------------------
+function mostrarResumen(texto) {
+  textoResumen.textContent = texto;
+  cajaResumen.hidden = false;
+}
+
+// ------------------------------------------------------------
+// resumirConIA: manda título y sinopsis a NUESTRO backend (/api/resumen),
+// que es quien habla con Gemini. La clave nunca pasa por el navegador.
+// ------------------------------------------------------------
+async function resumirConIA() {
+  if (!animeActual || relojCooldown) return;
+
+  // Sin sinopsis no hay nada que resumir: avisamos y no hacemos la petición
+  if (!animeActual.synopsis) {
+    mensajes.textContent = "Este anime no tiene sinopsis para resumir.";
+    mensajes.classList.add("error");
+    return;
+  }
+
+  // Guardamos el anime pedido: si el usuario cambia de tarjeta mientras
+  // espera, el resumen no debe pintarse sobre otro anime
+  const anime = animeActual;
+
+  // Si ya lo pedimos antes, usamos la caché y no molestamos a Gemini
+  if (cache[anime.mal_id]) {
+    limpiarMensajes();
+    mostrarResumen(cache[anime.mal_id]);
+    return;
+  }
+
+  limpiarMensajes();
+  botonResumir.disabled = true; // evita pulsaciones dobles mientras espera
+  botonResumir.textContent = "Resumiendo…";
+
+  try {
+    const respuesta = await fetch("/api/resumen", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        titulo: anime.title_english || anime.title || "Sin título",
+        sinopsis: anime.synopsis
+      })
+    });
+
+    // 429 del backend (Gemini saturado) → mensaje temático + cooldown
+    if (respuesta.status === 429) {
+      throw new Error("limite");
+    }
+    if (!respuesta.ok) {
+      throw new Error("ia");
+    }
+
+    const json = await respuesta.json();
+    if (!json.resumen) {
+      throw new Error("ia");
+    }
+
+    cache[anime.mal_id] = json.resumen; // se guarda para no repetir la petición
+
+    // Solo se pinta si la tarjeta sigue mostrando ese mismo anime
+    if (animeActual === anime) {
+      mostrarResumen(json.resumen);
+    }
+  } catch (error) {
+    // Un TypeError es un fallo de red; "limite" e "ia" son nuestros tipos
+    mostrarError(error.name === "TypeError" ? "red" : error.message);
+  } finally {
+    botonResumir.textContent = "Resumir con IA";
+    botonResumir.disabled = false;
+  }
 }
 
 // ------------------------------------------------------------
@@ -419,6 +512,7 @@ function pintarResultados(lista) {
 // ---------- Arranque de la página ----------
 botonGirar.addEventListener("click", girarRuleta); // botón "Girar la ruleta"
 botonBuscar.addEventListener("click", buscarAnime); // botón "Buscar"
+botonResumir.addEventListener("click", resumirConIA); // botón "Resumir con IA"
 
 // Con "Enter" dentro del campo de búsqueda también se busca
 elementoBusqueda.addEventListener("keydown", (evento) => {

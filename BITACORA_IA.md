@@ -71,6 +71,52 @@ El buscador conserva el `sfw=true` literal del enunciado; si también lo quieres
 **Prompt de corrección que usé:** [COMPLETAR o "No aplica"]
 **Resultado tras la corrección:** [COMPLETAR o "No aplica"]
 
+## Prompt 9
+**Prompt (copiado tal cual):** continua con el paso 6 con comentarios en español
+**Qué hizo la IA (resumen):** Creé `server.js`: Express sirve `public/` y `POST /api/resumen` llama a Gemini (`MODELO_GEMINI` en constante), con 400 sin sinopsis, 429 → `limite`, otros fallos → 502 `ia` y 500 genérico en el `catch`.
+Probé sin clave real: 400 sin sinopsis, 502 con sinopsis, 200 en `/` y el aviso de clave faltante en consola.
+**¿Funcionó?:** [COMPLETAR: sí / no]
+**Si no funcionó, qué corregí:** [COMPLETAR o "No aplica"]
+**Prompt de corrección que usé:** [COMPLETAR o "No aplica"]
+**Resultado tras la corrección:** [COMPLETAR o "No aplica"]
+
+## Prompt 10
+**Prompt (copiado tal cual):** continua con el paso 7 con comentarios en español
+**Qué hizo la IA (resumen):** En `public/app.js` agregué `resumirConIA()`: POST a `/api/resumen` con `{ titulo, sinopsis }`, aviso si no hay sinopsis, 429 → `limite`, otro fallo → `ia`, y caché `cache[mal_id]`. El botón se habilita al pintar la tarjeta y el cuadro muestra el resumen guardado si existe.
+Simulé con `fetch` falso: resumen OK, caché (1 sola llamada al repetir), sin sinopsis (0 llamadas), 502 y 429.
+**¿Funcionó?:** [COMPLETAR: sí / no]
+**Si no funcionó, qué corregí:** [COMPLETAR o "No aplica"]
+**Prompt de corrección que usé:** [COMPLETAR o "No aplica"]
+**Resultado tras la corrección:** [COMPLETAR o "No aplica"]
+
+## Prompt 11
+**Prompt (copiado tal cual):** app.js:322 
+ POST http://127.0.0.1:5501/api/resumen net::ERR_ABORTED 405 (Method Not Allowed)
+resumirConIA    @    app.js:322 salio este error
+**Qué hizo la IA (resumen):** Sin cambios de código. Explicó que la página se abría con Live Server (puerto 5501), que no tiene `/api/resumen`; hay que usar `npm start` y abrir `http://localhost:3000`.
+**¿Funcionó?:** [COMPLETAR: sí / no]
+**Si no funcionó, qué corregí:** [COMPLETAR o "No aplica"]
+**Prompt de corrección que usé:** [COMPLETAR o "No aplica"]
+**Resultado tras la corrección:** [COMPLETAR o "No aplica"]
+
+## Prompt 12
+**Prompt (copiado tal cual):** salio este error Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+**Qué hizo la IA (resumen):** En `server.js` agregué un `console.error` con el código y el mensaje que devuelve Gemini, para ver el motivo real del 502. También revisó el largo (sin mostrarla) de la clave del `.env`.
+**¿Funcionó?:** [COMPLETAR: sí / no]
+**Si no funcionó, qué corregí:** [COMPLETAR o "No aplica"]
+**Prompt de corrección que usé:** [COMPLETAR o "No aplica"]
+**Resultado tras la corrección:** [COMPLETAR o "No aplica"]
+
+## Prompt 13
+**Prompt (copiado tal cual):** "error": {
+    "code": 404,
+    "message": "This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use models/gemini-3.5-flash-lite for the latest features and improvements. We recommend you to use the Interactions API (https://ai.google.dev/gemin
+**Qué hizo la IA (resumen):** Cambié la constante `MODELO_GEMINI` en `server.js` de `gemini-2.5-flash-lite` a `gemini-3.5-flash-lite`.
+**¿Funcionó?:** [COMPLETAR: sí / no]
+**Si no funcionó, qué corregí:** [COMPLETAR o "No aplica"]
+**Prompt de corrección que usé:** [COMPLETAR o "No aplica"]
+**Resultado tras la corrección:** [COMPLETAR o "No aplica"]
+
 (Cada paso nuevo agrega otra entrada "## Prompt N" con el mismo formato.)
 
 ## Un error de la IA que detecté

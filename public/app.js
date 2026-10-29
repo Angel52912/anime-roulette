@@ -38,6 +38,9 @@ let animeActual = null;
 // true mientras hay una petición en curso: evita giros y búsquedas dobles
 let cargando = false;
 
+// Cronómetro del cooldown del 429: null cuando no hay espera en curso
+let relojCooldown = null;
+
 // ------------------------------------------------------------
 // pedirJikan: hace un fetch a la API con tiempo límite de 8 segundos
 // y convierte cada fallo en un "tipo" de error (red, limite, servidor).
@@ -98,6 +101,52 @@ function mostrarError(tipo) {
   // Tipo desconocido → mensaje de servidor por defecto
   mensajes.textContent = textos[clave] || textos.servidor;
   mensajes.classList.add("error");
+
+  // El límite de peticiones (429) es especial: además del mensaje temático,
+  // bloquea los botones 5 segundos con cuenta regresiva visible
+  if (clave === "limite") {
+    iniciarCooldown(5);
+  }
+}
+
+// ------------------------------------------------------------
+// iniciarCooldown: espera obligatoria tras un 429.
+// Durante "segundos" segundos los botones quedan deshabilitados y la
+// cuenta regresiva se ve en la zona de mensajes: "…(5)", "…(4)"…
+// ------------------------------------------------------------
+function iniciarCooldown(segundos) {
+  // Si ya había una cuenta atrás en marcha, no dejamos dos a la vez
+  if (relojCooldown) {
+    clearInterval(relojCooldown);
+  }
+
+  let restantes = segundos;
+  botonGirar.disabled = true;
+  botonBuscar.disabled = true;
+
+  const pintarCuenta = () => {
+    mensajes.textContent = `La casa pide que esperes un momento… (${restantes})`;
+    mensajes.classList.add("error");
+  };
+
+  pintarCuenta(); // el primer número se ve enseguida: "…(5)"
+
+  relojCooldown = setInterval(() => {
+    restantes -= 1;
+
+    if (restantes <= 0) {
+      clearInterval(relojCooldown);
+      relojCooldown = null;
+      mensajes.textContent = ""; // se borra el aviso al terminar
+      // Solo se reactivan los botones si no hay otra petición en curso
+      if (!cargando) {
+        botonGirar.disabled = false;
+        botonBuscar.disabled = false;
+      }
+    } else {
+      pintarCuenta();
+    }
+  }, 1000);
 }
 
 // ------------------------------------------------------------
@@ -122,10 +171,14 @@ function empezarCarga() {
 
 function terminarCarga() {
   cargando = false;
-  botonGirar.disabled = false;
-  botonBuscar.disabled = false;
   elementoRuleta.classList.remove("girando");
   textoCargando.hidden = true;
+
+  // Los botones solo se reactivan si NO hay una cuenta atrás (429) en marcha
+  if (!relojCooldown) {
+    botonGirar.disabled = false;
+    botonBuscar.disabled = false;
+  }
 }
 
 // ------------------------------------------------------------
@@ -247,7 +300,7 @@ async function girarConGenero(idGenero) {
 // pide un anime al azar puro (/random/anime, sin filtro, tal cual el enunciado)
 // ------------------------------------------------------------
 async function girarRuleta() {
-  if (cargando) return; // ya hay una petición en curso
+  if (cargando || relojCooldown) return; // petición en curso o espera del 429
 
   limpiarMensajes();
   empezarCarga();
@@ -281,7 +334,7 @@ async function girarRuleta() {
 // buscarAnime: pide hasta 12 resultados y los pinta como tarjetas chicas
 // ------------------------------------------------------------
 async function buscarAnime() {
-  if (cargando) return; // ya hay una petición en curso
+  if (cargando || relojCooldown) return; // petición en curso o espera del 429
 
   const texto = elementoBusqueda.value.trim();
 

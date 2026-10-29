@@ -63,6 +63,14 @@ El buscador conserva el `sfw=true` literal del enunciado; si también lo quieres
 **Prompt de corrección que usé:** [COMPLETAR o "No aplica"]
 **Resultado tras la corrección:** [COMPLETAR o "No aplica"]
 
+## Prompt 8
+**Prompt (copiado tal cual):** lee @INSTRUCCIONES_ANIME_ROULETTE-1.md y continua con el paso que sigue
+**Qué hizo la IA (resumen):** Revisé el paso 5: `mostrarError(tipo)` con los 5 textos temáticos, `iniciarCooldown(5)` que deshabilita botones con cuenta regresiva visible en el 429, y `terminarCarga()` en `finally`. Ya estaba en `public/app.js` sin commitear; solo agregué esta entrada.
+**¿Funcionó?:** [COMPLETAR: sí / no]
+**Si no funcionó, qué corregí:** [COMPLETAR o "No aplica"]
+**Prompt de corrección que usé:** [COMPLETAR o "No aplica"]
+**Resultado tras la corrección:** [COMPLETAR o "No aplica"]
+
 (Cada paso nuevo agrega otra entrada "## Prompt N" con el mismo formato.)
 
 ## Un error de la IA que detecté

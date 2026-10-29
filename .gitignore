@@ -1,0 +1,5 @@
+# Dependencias de npm: se reinstalan con "npm install", no se suben al repo
+node_modules/
+
+# Clave secreta de Gemini: NUNCA se versiona (solo existe en tu computadora)
+.env

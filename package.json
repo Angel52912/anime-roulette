@@ -1,0 +1,13 @@
+{
+  "name": "anime-roulette",
+  "version": "1.0.0",
+  "description": "Anime Roulette: apuesta por un género y gira la ruleta para descubrir un anime al azar.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2"
+  }
+}
